@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics Calculator</title>
+  
+    <style>
+        
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.calculator-container {
+    background: #ffffff;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+input[type="text"], input[type="number"], select, button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.result-box {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    text-align: center;
+    font-size: 16px;
+    color: #007bff;
+}
+
+    </style>
+   
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Statistics Calculator</h1>
+        <div class="input-group">
+            <label for="dataType">Data Type:</label>
+            <select id="dataType" onchange="toggleFields()">
+                <option value="ungrouped">Uncgrouped Data</option>
+                <option value="grouped">Grouped Data</option>
+            </select>
+        </div>
+
+        <!-- Ungrouped Data Fields -->
+        <div id="ungroupedFields" class="input-group">
+            <label for="ungroupedData">Enter Numbers (comma-separated):</label>
+            <input type="text" id="ungroupedData" placeholder="e.g., 1, 2, 3, 4">
+        </div>
+
+        <!-- Grouped Data Fields -->
+        <div id="groupedFields" class="input-group" style="display: none;">
+            <label for="classIntervals">Class Intervals (comma-separated):</label>
+            <input type="text" id="classIntervals" placeholder="e.g., 0-10, 10-20">
+            <label for="frequencies">Frequencies (comma-separated):</label>
+            <input type="text" id="frequencies" placeholder="e.g., 5, 10">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="input-group">
+            <button onclick="calculate('mean')">Calculate Mean</button>
+            <button onclick="calculate('median')">Calculate Median</button>
+            <button onclick="calculate('mode')">Calculate Mode</button>
+        </div>
+
+        <!-- Result Display -->
+        <div class="result-box" id="result">Result: N/A</div>
+    </div>
+
+    <script>
+        // Toggle fields based on data type
+        function toggleFields() {
+            const dataType = document.getElementById("dataType").value;
+            document.getElementById("ungroupedFields").style.display =
+                dataType === "ungrouped" ? "block" : "none";
+            document.getElementById("groupedFields").style.display =
+                dataType === "grouped" ? "block" : "none";
+        }
+
+        // Calculate Mean, Median, Mode
+        function calculate(statType) {
+            const dataType = document.getElementById("dataType").value;
+
+            // Ungrouped Data Calculation
+            if (dataType === "ungrouped") {
+                const rawData = document.getElementById("ungroupedData").value
+                    .split(",")
+                    .map(Number)
+                    .filter(n => !isNaN(n));
+
+                if (rawData.length === 0) {
+                    alert("Please enter valid ungrouped data.");
+                    return;
+                }
+
+                if (statType === "mean") {
+                    const mean = rawData.reduce((sum, num) => sum + num, 0) / rawData.length;
+                    displayResult(mean.toFixed(2));
+                } else if (statType === "median") {
+                    rawData.sort((a, b) => a - b);
+                    const mid = Math.floor(rawData.length / 2); 
+                    const median =
+                        rawData.length % 2 === 0
+                            ? (rawData[mid - 1] + rawData[mid]) / 2
+                            : rawData[mid];
+                    displayResult(median.toFixed(2));
+                } else if (statType === "mode") {
+                    const freqMap = {};
+                    rawData.forEach(num => (freqMap[num] = (freqMap[num] || 0) + 1));
+                    const maxFreq = Math.max(...Object.values(freqMap));
+                    const modes = Object.keys(freqMap).filter(key => freqMap[key] === maxFreq);
+                    displayResult(modes.join(", "));
+                }
+            }
+
+            // Grouped Data Calculation
+            else if (dataType === "grouped") {
+                const intervals = document.getElementById("classIntervals").value.split(",");
+                const frequencies = document.getElementById("frequencies").value.split(",").map(Number);
+
+                if (
+                    intervals.length !== frequencies.length ||
+                    frequencies.some(isNaN) ||
+                    frequencies.length === 0
+                ) {
+                    alert("Please ensure intervals and frequencies are valid and of the same length.");
+                    return;
+                }
+
+                // Calculate midpoints
+                const midpoints = intervals.map(interval => {
+                    const [lower, upper] = interval.split("-").map(Number);
+                    return (lower + upper) / 2;
+                });
+
+                const totalFrequency = frequencies.reduce((sum, freq) => sum + freq, 0);
+
+                if (statType === "mean") {
+                    const mean =
+                        midpoints.reduce((sum, midpoint, i) => sum + midpoint * frequencies[i], 0) /
+                        totalFrequency;
+                    displayResult(mean.toFixed(2));
+                } else if (statType === "median") {
+                    const cumulativeFreq = frequencies.reduce(
+                        (acc, freq) => {
+                            acc.push((acc[acc.length - 1] || 0) + freq);
+                            return acc;
+                        },
+                        []
+                    );
+                    const medianClassIndex = cumulativeFreq.findIndex(cf => cf >= totalFrequency / 2);
+                    displayResult(midpoints[medianClassIndex].toFixed(2));
+                } else if (statType === "mode") {
+                    const maxFreqIndex = frequencies.indexOf(Math.max(...frequencies));
+                    displayResult(midpoints[maxFreqIndex].toFixed(2));
+                }
+            }
+        }
+
+        // Display result
+        function displayResult(result) {
+            document.getElementById("result").textContent = "Result: " + result;
+        }
+    </script>
+</body>
+</html>
